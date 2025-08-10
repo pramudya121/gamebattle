@@ -1,37 +1,619 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Battle Game - NexusChain</title>
-  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
-  <script defer src="ethers.js"></script>
-  <script defer src="app.js"></script>
-  <style>
-    body {
-      background-color: #1a1a1a;
-      color: #fff;
-      font-family: 'Segoe UI', sans-serif;
-      text-align: center;
-      padding: 50px;
-    }
-    input, button {
-      margin: 10px;
-      padding: 10px;
-      font-size: 16px;
-      width: 300px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusChain Battle Arena</title>
+    <style>
+        :root {
+            --primary: #6e48aa;
+            --secondary: #9d50bb;
+            --dark: #333;
+            --light: #f5f5f5;
+            --danger: #ff3860;
+            --success: #23d160;
+            --warning: #ffdd57;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: var(--light);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 2px solid var(--secondary);
+        }
+        
+        h1 {
+            margin: 0;
+            color: var(--secondary);
+            text-shadow: 0 0 10px rgba(157, 80, 187, 0.5);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            flex: 1;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .player-area, .enemy-area {
+            background: rgba(20, 20, 40, 0.7);
+            border-radius: 10px;
+            padding: 1rem;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(110, 72, 170, 0.3);
+        }
+        
+        .player-area {
+            border-top: 5px solid var(--success);
+        }
+        
+        .enemy-area {
+            border-top: 5px solid var(--danger);
+        }
+        
+        .character {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .character-display {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 1rem 0;
+            background: rgba(30, 30, 60, 0.5);
+            border-radius: 50%;
+            border: 3px solid var(--primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .character-display svg {
+            width: 100px;
+            height: 100px;
+        }
+        
+        .stats {
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        .stat-bar {
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.2rem;
+            font-size: 0.9rem;
+        }
+        
+        .bar-container {
+            height: 10px;
+            background: rgba(70, 70, 90, 0.5);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .bar {
+            height: 100%;
+            border-radius: 5px;
+        }
+        
+        .health-bar {
+            background: var(--danger);
+        }
+        
+        .energy-bar {
+            background: var(--warning);
+        }
+        
+        .shield-bar {
+            background: var(--secondary);
+        }
+        
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .attack-btn {
+            background: #c0392b;
+        }
+        
+        .defense-btn {
+            background: #2980b9;
+        }
+        
+        .special-btn {
+            background: #f39c12;
+        }
+        
+        .blockchain-btn {
+            background: #27ae60;
+        }
+        
+        .log-container {
+            background: rgba(20, 20, 40, 0.7);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 2rem;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid rgba(110, 72, 170, 0.3);
+        }
+        
+        .log-entry {
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .player-log {
+            color: var(--success);
+        }
+        
+        .enemy-log {
+            color: var(--danger);
+        }
+        
+        .system-log {
+            color: var(--warning);
+        }
+        
+        footer {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        
+        @media (max-width: 768px) {
+            .game-board {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>⚔️ Battle Game - NexusChain</h1>
-  <button onclick="startGame()">Start Game</button><br><br>
-  
-  <input id="defender" placeholder="Defender address">
-  <input id="damage" type="number" placeholder="Damage (1-100)">
-  <button onclick="attack()">Attack</button><br><br>
-
-  <input id="player" placeholder="Check Health of address">
-  <button onclick="getHealth()">Check Health</button>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
+    <header>
+        <h1>NexusChain Battle Arena</h1>
+        <button id="connectWallet" style="margin-top: 10px; padding: 8px 16px;">Connect Wallet</button>
+        <div id="walletAddress" style="font-size: 0.8em; margin-top: 5px;"></div>
+    </header>
+    
+    <div class="container">
+        <div class="game-board">
+            <div class="player-area">
+                <h2>Player</h2>
+                <div class="character">
+                    <div class="character-display">
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="40" r="20" fill="#fff" />
+                            <path d="M30,80 Q50,100 70,80" stroke="#fff" stroke-width="4" fill="none" />
+                            <ellipse cx="60" cy="35" rx="2" ry="3" fill="#333" />
+                            <ellipse cx="40" cy="35" rx="2" ry="3" fill="#333" />
+                        </svg>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Health</span>
+                                <span id="player-health-value">100/100</span>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar health-bar" id="player-health-bar" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Energy</span>
+                                <span id="player-energy-value">50/50</span>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar energy-bar" id="player-energy-bar" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Shield</span>
+                                <span id="player-shield-value">0/30</span>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar shield-bar" id="player-shield-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="actions">
+                        <button class="attack-btn" id="attack-btn">Attack</button>
+                        <button class="defense-btn" id="defense-btn">Defend</button>
+                        <button class="special-btn" id="special-btn">Special</button>
+                        <button class="blockchain-btn" id="chain-btn">Chain Power</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="enemy-area">
+                <h2>Nexus Node</h2>
+                <div class="character">
+                    <div class="character-display">
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="30" y="30" width="40" height="40" rx="5" fill="#ff5555" />
+                            <path d="M40,40 L60,60 M40,60 L60,40" stroke="#fff" stroke-width="4" />
+                        </svg>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Health</span>
+                                <span id="enemy-health-value">100/100</span>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar health-bar" id="enemy-health-bar" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>Power</span>
+                                <span id="enemy-power-value">100%</span>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar energy-bar" id="enemy-power-bar" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container" id="battle-log">
+            <div class="log-entry system-log">Welcome to NexusChain Battle Arena!</div>
+            <div class="log-entry system-log">Connect your wallet to link your NexusChain identity...</div>
+        </div>
+    </div>
+    
+    <footer>
+        NexusChain Testnet Game © 2023 | For demonstration purposes only
+    </footer>
+    
+    <script>
+        // Contract configuration
+        const contractConfig = {
+            address: "0x...", // Your contract address here
+            abi: [...] // Your contract ABI here
+        };
+        
+        // Game state
+        const gameState = {
+            walletConnected: false,
+            player: {
+                health: 100,
+                maxHealth: 100,
+                energy: 50,
+                maxEnergy: 50,
+                shield: 0,
+                maxShield: 30,
+                chainPower: 0,
+                maxChainPower: 100
+            },
+            enemy: {
+                health: 100,
+                maxHealth: 100,
+                power: 100
+            },
+            battleLog: [],
+            turn: 0
+        };
+        
+        // DOM elements
+        const elements = {
+            playerHealthBar: document.getElementById('player-health-bar'),
+            playerHealthValue: document.getElementById('player-health-value'),
+            playerEnergyBar: document.getElementById('player-energy-bar'),
+            playerEnergyValue: document.getElementById('player-energy-value'),
+            playerShieldBar: document.getElementById('player-shield-bar'),
+            playerShieldValue: document.getElementById('player-shield-value'),
+            
+            enemyHealthBar: document.getElementById('enemy-health-bar'),
+            enemyHealthValue: document.getElementById('enemy-health-value'),
+            enemyPowerBar: document.getElementById('enemy-power-bar'),
+            enemyPowerValue: document.getElementById('enemy-power-value'),
+            
+            attackBtn: document.getElementById('attack-btn'),
+            defenseBtn: document.getElementById('defense-btn'),
+            specialBtn: document.getElementById('special-btn'),
+            chainBtn: document.getElementById('chain-btn'),
+            
+            battleLog: document.getElementById('battle-log')
+        };
+        
+        // Initialize game
+        function initGame() {
+            updateStats();
+            bindEvents();
+            
+            // Initialize Web3
+            if (window.ethereum) {
+                window.web3 = new Web3(window.ethereum);
+                document.getElementById('connectWallet').addEventListener('click', connectWallet);
+            } else {
+                addLogEntry("Please install MetaMask to use this dApp!", "system");
+            }
+        }
+        
+        // Update UI with current stats
+        function updateStats() {
+            // Player stats
+            const player = gameState.player;
+            const playerHealthPercent = (player.health / player.maxHealth) * 100;
+            const playerEnergyPercent = (player.energy / player.maxEnergy) * 100;
+            const playerShieldPercent = (player.shield / player.maxShield) * 100;
+            
+            elements.playerHealthBar.style.width = `${playerHealthPercent}%`;
+            elements.playerHealthValue.textContent = `${player.health}/${player.maxHealth}`;
+            
+            elements.playerEnergyBar.style.width = `${playerEnergyPercent}%`;
+            elements.playerEnergyValue.textContent = `${player.energy}/${player.maxEnergy}`;
+            
+            elements.playerShieldBar.style.width = `${playerShieldPercent}%`;
+            elements.playerShieldValue.textContent = `${player.shield}/${player.maxShield}`;
+            
+            // Enemy stats
+            const enemy = gameState.enemy;
+            const enemyHealthPercent = (enemy.health / enemy.maxHealth) * 100;
+            
+            elements.enemyHealthBar.style.width = `${enemyHealthPercent}%`;
+            elements.enemyHealthValue.textContent = `${enemy.health}/${enemy.maxHealth}`;
+            
+            elements.enemyPowerBar.style.width = `${enemy.power}%`;
+            elements.enemyPowerValue.textContent = `${enemy.power}%`;
+            
+            // Toggle buttons based on energy
+            elements.attackBtn.disabled = player.energy < 10;
+            elements.defenseBtn.disabled = player.energy < 5;
+            elements.specialBtn.disabled = player.energy < 20;
+            
+            // Check game over conditions
+            if (player.health <= 0) {
+                gameOver(false);
+            } else if (enemy.health <= 0) {
+                gameOver(true);
+            }
+        }
+        
+        // Bind event listeners
+        function bindEvents() {
+            elements.attackBtn.addEventListener('click', playerAttack);
+            elements.defenseBtn.addEventListener('click', playerDefend);
+            elements.specialBtn.addEventListener('click', playerSpecial);
+            elements.chainBtn.addEventListener('click', playerChainPower);
+        }
+        
+        // Player actions
+        function playerAttack() {
+            const damage = Math.floor(Math.random() * 15) + 10; // 10-25 damage
+            gameState.player.energy -= 10;
+            
+            applyDamage('enemy', damage);
+            addLogEntry(`You attacked the Nexus Node for ${damage} damage!`, 'player');
+            
+            enemyTurn();
+        }
+        
+        function playerDefend() {
+            gameState.player.energy -= 5;
+            gameState.player.shield = Math.min(gameState.player.shield + 15, gameState.player.maxShield);
+            
+            addLogEntry("You raised your shield! (+15 shield)", 'player');
+            updateStats();
+            
+            enemyTurn();
+        }
+        
+        function playerSpecial() {
+            const damage = Math.floor(Math.random() * 25) + 15; // 15-40 damage
+            gameState.player.energy -= 20;
+            
+            applyDamage('enemy', damage);
+            addLogEntry(`You used a special technique dealing ${damage} damage!`, 'player');
+            
+            enemyTurn();
+        }
+        
+        function playerChainPower() {
+            // This would normally connect to blockchain for verification
+            // For demo, we'll just give a random boost
+            const boost = Math.floor(Math.random() * 40) + 10; // 10-50
+            gameState.player.energy = Math.min(gameState.player.energy + boost, gameState.player.maxEnergy);
+            gameState.player.health = Math.min(gameState.player.health + Math.floor(boost/2), gameState.player.maxHealth);
+            
+            addLogEntry(`Connected to NexusChain! Received ${boost} energy and ${Math.floor(boost/2)} health.`, 'player');
+            updateStats();
+        }
+        
+        // Enemy actions
+        function enemyTurn() {
+            gameState.turn++;
+            
+            // Enemy gets stronger over time
+            const powerUp = Math.floor(gameState.turn / 3);
+            const baseDamage = 10 + powerUp;
+            const damage = Math.floor(Math.random() * 10) + baseDamage; // 10-20 + increases over time
+            
+            setTimeout(() => {
+                applyDamage('player', damage);
+                addLogEntry(`Nexus Node struck back for ${damage} damage!`, 'enemy');
+                
+                updateStats();
+            }, 1000);
+        }
+        
+        // Apply damage to target
+        function applyDamage(target, damage) {
+            if (target === 'player') {
+                // Reduce damage by shield first
+                const shieldDamage = Math.min(damage, gameState.player.shield);
+                gameState.player.shield -= shieldDamage;
+                damage -= shieldDamage;
+                
+                if (damage > 0) {
+                    gameState.player.health = Math.max(0, gameState.player.health - damage);
+                }
+                
+                if (shieldDamage > 0) {
+                    addLogEntry(`Shield absorbed ${shieldDamage} damage!`, 'player');
+                }
+            } else if (target === 'enemy') {
+                gameState.enemy.health = Math.max(0, gameState.enemy.health - damage);
+                
+                // Nodes get stronger when damaged
+                if (Math.random() > 0.7) {
+                    const powerUp = Math.floor(Math.random() * 10) + 5;
+                    gameState.enemy.power = Math.min(150, gameState.enemy.power + powerUp);
+                    addLogEntry(`Nexus Node power increased by ${powerUp}%!`, 'enemy');
+                }
+            }
+            
+            updateStats();
+        }
+        
+        // Add log entry
+        function addLogEntry(message, type) {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}-log`;
+            entry.textContent = message;
+            
+            elements.battleLog.appendChild(entry);
+            elements.battleLog.scrollTop = elements.battleLog.scrollHeight;
+        }
+        
+        // Game over
+        function gameOver(playerWon) {
+            const buttons = [elements.attackBtn, elements.defenseBtn, elements.specialBtn, elements.chainBtn];
+            buttons.forEach(btn => btn.disabled = true);
+            
+            if (playerWon) {
+                addLogEntry("Congratulations! You defeated the Nexus Node!", 'system');
+                addLogEntry("Press F5 to play again", 'system');
+            } else {
+                addLogEntry("Game Over! The Nexus Node proved too powerful.", 'system');
+                addLogEntry("Press F5 to try again", 'system');
+            }
+            
+            // Fake blockchain transaction for demo
+            if (playerWon) {
+                setTimeout(() => {
+                    addLogEntry("Transaction: Rewarding 10 NCX to your wallet for successful testnet validation", 'system');
+                }, 1500);
+            }
+        }
+        
+        // Wallet connection
+        async function connectWallet() {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                gameState.walletConnected = true;
+                const walletAddress = accounts[0];
+                document.getElementById('walletAddress').textContent = `Connected: ${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}`;
+                document.getElementById('connectWallet').textContent = "Wallet Connected";
+                addLogEntry("Wallet connected successfully!", "system");
+                elements.chainBtn.disabled = false;
+                
+                // Initialize contract
+                gameState.contract = new web3.eth.Contract(contractConfig.abi, contractConfig.address);
+            } catch (error) {
+                addLogEntry("Wallet connection failed: " + error.message, "system");
+            }
+        }
+        
+        // Modified Chain Power function to interact with contract
+        async function playerChainPower() {
+            if (!gameState.walletConnected) {
+                addLogEntry("Please connect your wallet first!", "system");
+                return;
+            }
+            
+            try {
+                addLogEntry("Calling NexusChain smart contract...", "system");
+                
+                // Example contract interaction
+                const result = await gameState.contract.methods.claimRewards().send({
+                    from: web3.eth.defaultAccount
+                });
+                
+                const boost = Math.floor(result.events.RewardClaimed.returnValues.amount / 1e18);
+                gameState.player.energy = Math.min(gameState.player.energy + boost, gameState.player.maxEnergy);
+                gameState.player.health = Math.min(gameState.player.health + Math.floor(boost/2), gameState.player.maxHealth);
+                
+                addLogEntry(`Smart contract execution successful! Received ${boost} NCX as energy and ${Math.floor(boost/2)} as health.`, "player");
+                updateStats();
+                
+            } catch (error) {
+                addLogEntry("Contract call failed: " + error.message, "system");
+            }
+        }
+        
+        // Start the game
+        window.onload = initGame;
+    <src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js">
+    </script>
 </body>
 </html>
